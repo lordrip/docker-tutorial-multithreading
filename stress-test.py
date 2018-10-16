@@ -1,20 +1,27 @@
 #!bin/python3
 
-import requests
-import time
+import argparse
+from stress_test.request_thread import RequestThread
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--calls', type=int, help='Amount of calls to be done per each Thread')
+parser.add_argument('-t', '--threads', type=int, help='Amount of Threads to be used')
+parser.add_argument('--host', type=str, help='IP address or hostname to be called')
 
-def current_milli_time():
-    return int(round(time.time() * 1000))
+arguments = parser.parse_args()
 
+calls = arguments.calls or 10
+threads = arguments.threads or 1
+host = arguments.host or 'http://localhost/'
 
-start_time = current_milli_time()
+if not host.startswith('http'):
+    print('[WARN] - Protocol not selected, using default (HTTP)')
+    host = 'http://' + host
 
-for i in range(500):
-    r = requests.get('http://192.168.99.100')
+threads_pool = []
 
-    # print(r)
-
-end_time = current_milli_time()
-
-print(end_time - start_time)
+for i in range(threads):
+    name = 'thread-{id}'.format(id=i)
+    thread = RequestThread(name=name, calls_amount=calls, address=host)
+    threads_pool.append(thread)
+    thread.start()
